@@ -43,12 +43,36 @@ class GameInfo extends React.Component {
   static contextType = PlayerContext;
   constructor(props) {
     super(props);
+    this.moveNotiRegistered = false;
     this.state = {
       stepNumber: 0,
-      xIsNext: true,
-      player: 1 // 当前玩家，1:X, 2:O。相当于上述xIsNext。player = xIsNext ? 1 : 2;
+      xIsNext: true
     };
   }
+
+  componentDidMount() {
+    if (!this.moveNotiRegistered) {
+      this.context.registerMoveNoti(()=>this.onMove());
+      this.moveNotiRegistered = true;
+    }
+    
+  }
+
+  onMove() {
+    let ctx = this.context;
+    this.setState({
+      stepNumber: ctx.getStepNumber(),
+      xIsNext: (ctx.getPlayer() === 2) // 当前玩家，1:X, 2:O。相当于上述xIsNext。player = xIsNext ? 1 : 2;
+    });
+  }
+
+  jumpTo(step) {
+    this.setState({
+      stepNumber: step,
+      xIsNext: (step % 2) === 0
+    });
+  }
+
   render() {
     console.log("GameInfo is rendering...")
     const ctx = this.context;
@@ -90,48 +114,9 @@ class Game extends React.Component {
     // if any player wins, force update whole game
     this.singletonPlayerContext = getSingletonPlayerContext();
     this.singletonPlayerContext.registerWinnerNoti(()=>this.forceUpdate());
-    this.state = {
-      history: [
-        {
-          squares: Array(9).fill(null)
-        }
-      ],
-      stepNumber: 0,
-      xIsNext: true,
-      player: 1 // 当前玩家，1:X, 2:O。相当于上述xIsNext。player = xIsNext ? 1 : 2;
-    };
-  }
-
-  jumpTo(step) {
-    this.setState({
-      stepNumber: step,
-      xIsNext: (step % 2) === 0
-    });
   }
 
   render() {
-    const ctx = this.singletonPlayerContext;
-    const history = ctx.getHistory(ctx.getStepNumber());
-    const winner = this.singletonPlayerContext.getWinner();
-
-    const moves = history.map((step, move) => {
-      const desc = move ?
-        'Go to move #' + move :
-        'Go to game start';
-      return (
-        <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>{desc}</button>
-        </li>
-      );
-    });
-
-    let status;
-    if (winner) {
-      status = "Winner: " + winner;
-    } else {
-      status = "Next player: " + (this.state.xIsNext ? "X" : "O");
-    }
-
     return (
       <PlayerContext.Provider value={this.singletonPlayerContext}>
         <div className="game">
