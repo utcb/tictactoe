@@ -1,7 +1,12 @@
 # tictactoe
 Tutorial: Intro to React, the Tic Tac Toe game
 
+# 参考资料
+[React LifeCycle Methods Diagram](https://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/)
+[React Context](https://reactjs.org/docs/context.html) 
+Context provides a way to pass data through the component tree without having to pass props down manually at every level.
 
+# 官方
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
