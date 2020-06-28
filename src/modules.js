@@ -5,15 +5,17 @@ class DefaultPlayerContext {
     constructor() {
         this.winnerNotis = []; // 登记赢得比赛的通知方法
         this.moveNotis = []; // 登记（合法）点击的通知方法
-        let player = 1;
-        let stepNumber = 0;
+        let player = 1; // 当前玩家，即轮到该玩家下子
+        let stepNumber = 0; // 步数，实际下子的数量
         this.getPlayer = ()=>player; // 获取玩家，1表示X，2表示O
         this.getStepNumber = ()=>stepNumber; // 步数
         const squares = Array(9).fill(null); // 9宫格，缺省都为null，玩家点击第几格，就标记第几格为玩家号（1或2）
         const steps = Array(9).fill(null); // 记录至多9个步骤的九宫格index
         let winner = null;
         let winLine = null;
-        this.mark = (index)=>{
+        let snapshot = null; // 当前快照，仅当history move时用到，平时设置为null
+        this.mark = (index)=>{ // 玩家成功点击方法
+            snapshot = null; // 清空快照
             steps[stepNumber] = index
             squares[index] = player;
             stepNumber += 1; // 步数++
@@ -31,10 +33,54 @@ class DefaultPlayerContext {
                 }
             }
         };
-        this.getWinLine = ()=>winLine;
+        // this.getWinLine = ()=>winLine;
         this.getWinner = ()=>winner;
-        this.getHistory = (stepCount)=>{
-            return squares.slice(0, stepCount);
+        this.getSteps = ()=>{
+            if (snapshot) {
+                return snapshot.steps.slice(0, snapshot.stepNumber);
+            } else {
+                return steps.slice(0, stepNumber);
+            }
+        }
+        // 指定index的square是否在winLine中
+        this.inWinLine = (squareIndex) => {
+            return (winLine !== null && winLine.indexOf(squareIndex) > -1);
+        }
+        this.jumpTo = (step)=>{
+            // step: liternally from 1, internally from 0
+            if (snapshot == null) {
+                snapshot = {
+                    player: player,
+                    stepNumber: stepNumber,
+                    squares: Array.from(squares),
+                    steps: Array.from(steps),
+                    winner: winner,
+                    winLine: winLine
+                };
+            }
+            for (let i = 0; i < 9; i++) {
+                squares[i] = snapshot.squares[i];
+                steps[i] = snapshot.steps[i];
+            }
+            for (let i = step; i < snapshot.steps.length; i++) {
+                let move = snapshot.steps[i];
+                squares[move] = null;
+                steps[i] = null;
+            }
+            stepNumber = step;
+            player = (step % 2) + 1;
+            winner = null;
+            winLine = calculateWinner(squares);
+            if (winLine != null) {
+                player = (step % 2);
+                winner = player;
+            }
+            for (let i = 0; i < this.moveNotis.length; i++) {
+                this.moveNotis[i]();
+            }
+            for (let i = 0; i < this.winnerNotis.length; i++) {
+                this.winnerNotis[i]();
+            }
         };
     }
     // 登记赢得比赛的通知方法
@@ -73,70 +119,61 @@ export class Square extends React.Component {
         super(props);
         this.index = props.index;
         this.state = {
-            marks: null,
-            // 显示的marks
-            marksdisplay : (
-                <small><sub>{this.index}</sub></small>
-            ),
-            stepNumber: 0,
-            // 是否在赢得比赛的三个点击中。标记marks旁的小字，表示第几步，红色表示成功的步骤
-            inWinLine: false
+            player: null, // 点击玩家，null表示尚未点击
+            stepNumber: 0
         }
     }
     
     onClick = (() => {
         let player = this.context.getPlayer();
-        if (this.state.marks !== null || !player) { // 已经被点击过，或者玩家尚未被初始化
+        if (this.state.player !== null || !player) { // 已经被点击过，或者玩家尚未被初始化
             return;
         }
-        let marks = null;
-        if (player === 1) { // first player
-            marks = 'X';
+        if (player === 1 || player === 2) {
             this.context.mark(this.index);
-        } else if (player === 2) { // second player
-            marks = 'O';
-            this.context.mark(this.index);
-        } else if (player !== null) { // error
-            marks = 'E';
         }
-        let inWinLine = (this.context.getWinLine() !== null && this.context.getWinLine().indexOf(this.index) > -1);
         this.setState({
-            marks: marks,
-            marksdisplay: marks,
-            stepNumber: this.context.getStepNumber(),
-            inWinLine: inWinLine
+            player: player,
+            stepNumber: this.context.getStepNumber()
         });
     })
 
     render() {
-        console.log("Square[" + this.index + "] is rendering");
+        // console.log("Square[" + this.index + "] is rendering");
+        let marks = null;
+        let player = this.state.player;
+        let stepNumber = this.state.stepNumber;
+        if (stepNumber > this.context.getStepNumber()) {
+            player = null;
+            stepNumber = 0;
+        }
         let subs = null;
-        if (this.state.stepNumber > 0) {
-            if (this.state.inWinLine) {
-                subs = (
-                    <sub className="win">{this.state.stepNumber}</sub>
-                )
-            } else {
-                subs = (
-                    <sub>{this.state.stepNumber}</sub>
-                )
+        if (player === 1 || player === 2) { // first player
+            marks = player === 1 ? 'X' : 'O';
+            // 是否在赢得比赛的三个点击中。标记marks旁的小字，表示第几步，红色表示成功的步骤
+            if (stepNumber > 0) {
+                if (this.context.inWinLine(this.index)) {
+                    subs = (
+                        <sub className="win">{stepNumber}</sub>
+                    )
+                } else {
+                    subs = (
+                        <sub>{stepNumber}</sub>
+                    )
+                }
             }
+        } else if (player !== null) { // error
+            marks = 'E';
+        } else {
+            marks = (
+                <small><sub>{this.index}</sub></small>
+            );
         }
         return (
             <button className="square" onClick={this.onClick}>
-              {this.state.marksdisplay}{subs}
+              {marks}{subs}
             </button>
           );
-    }
-
-    // 玩家胜利之后，需要标记赢得胜利的3个格子，但是只有Context变化了，需要在此方法内setState
-    componentDidUpdate(prevProps, prevState) {
-        let inWinLine = (this.context.getWinLine() !== null && this.context.getWinLine().indexOf(this.index) > -1);
-        if (inWinLine !== this.state.inWinLine) {
-            this.setState({
-                inWinLine: inWinLine
-            })
-        }
     }
 }
 

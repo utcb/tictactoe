@@ -55,37 +55,36 @@ class GameInfo extends React.Component {
       this.context.registerMoveNoti(()=>this.onMove());
       this.moveNotiRegistered = true;
     }
-    
   }
 
   onMove() {
     let ctx = this.context;
     this.setState({
       stepNumber: ctx.getStepNumber(),
-      xIsNext: (ctx.getPlayer() === 2) // 当前玩家，1:X, 2:O。相当于上述xIsNext。player = xIsNext ? 1 : 2;
+      xIsNext: (ctx.getPlayer() === 1) // 当前玩家，1:X, 2:O。相当于上述xIsNext。player = xIsNext ? 1 : 2;
     });
   }
 
   jumpTo(step) {
+    const ctx = this.context;
     this.setState({
       stepNumber: step,
       xIsNext: (step % 2) === 0
     });
+    ctx.jumpTo(step);
   }
 
   render() {
-    console.log("GameInfo is rendering...")
+    // console.log("GameInfo is rendering...")
     const ctx = this.context;
-    const history = ctx.getHistory(ctx.getStepNumber());
+    const history = ctx.getSteps();
     const winner = ctx.getWinner();
 
-    const moves = history.map((step, move) => {
-      const desc = move ?
-        'Go to move #' + move :
-        'Go to game start';
+    const moves = history.map((move, step) => {
+      const desc = 'Go to move #' + move;
       return (
-        <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>{desc}</button>
+        <li key={step+1}>
+          <button onClick={() => this.jumpTo(step+1)}>{desc}</button>
         </li>
       );
     });
@@ -99,7 +98,11 @@ class GameInfo extends React.Component {
     return (
       <div className="game-info">
           <div>{status}</div>
-          <ol>{moves}</ol>
+          <ol>
+            <li key={0}>
+              <button onClick={() => this.jumpTo(0)}>Go to game start</button>
+            </li>
+            {moves}</ol>
       </div>
     )
   }
@@ -111,14 +114,14 @@ class GameInfo extends React.Component {
 class Game extends React.Component {
   constructor(props) {
     super(props);
+    this.ctx = getSingletonPlayerContext();
     // if any player wins, force update whole game
-    this.singletonPlayerContext = getSingletonPlayerContext();
-    this.singletonPlayerContext.registerWinnerNoti(()=>this.forceUpdate());
+    this.ctx.registerWinnerNoti(()=>this.forceUpdate());
   }
 
   render() {
     return (
-      <PlayerContext.Provider value={this.singletonPlayerContext}>
+      <PlayerContext.Provider value={this.ctx}>
         <div className="game">
           <Board />
           <GameInfo />
