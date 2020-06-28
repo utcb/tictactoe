@@ -3,38 +3,24 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import {Square, PlayerContext, getSingletonPlayerContext} from './modules';
 
-/*
-function Square(props) {
-  return (
-    <button className="square" onClick={props.onClick}>
-      {props.value}
-    </button>
-  );
-}
-*/
-
 class Board extends React.Component {
   render() {
     return (
-      <div className="game-board">
-        <div>
-          <div className="board-row">
-            <Square index={0}/>
-            <Square index={1}/>
-            <Square index={2}/>
+      <PlayerContext.Consumer>
+        {({getSquares})=>(
+          <div className="game-board">
+            <div>
+              {[0,1,2].map(row=>(
+                <div key={row} className="board-row">
+                  {[0,1,2].map(col=>(
+                    <Square key={col} value={getSquares()} index={col + row * 3} />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="board-row">
-            <Square index={3}/>
-            <Square index={4}/>
-            <Square index={5}/>
-          </div>
-          <div className="board-row">
-            <Square index={6}/>
-            <Square index={7}/>
-            <Square index={8}/>
-          </div>
-        </div>
-      </div>
+        )}
+      </PlayerContext.Consumer>
     );
   }
 }
@@ -43,7 +29,7 @@ class GameInfo extends React.Component {
   static contextType = PlayerContext;
   constructor(props) {
     super(props);
-    this.moveNotiRegistered = false;
+    this.playNotiRegistered = false;
     this.state = {
       stepNumber: 0,
       xIsNext: true
@@ -51,13 +37,13 @@ class GameInfo extends React.Component {
   }
 
   componentDidMount() {
-    if (!this.moveNotiRegistered) {
-      this.context.registerMoveNoti(()=>this.onMove());
-      this.moveNotiRegistered = true;
+    if (!this.playNotiRegistered) {
+      this.context.registerPlayNoti(()=>this.onPlay());
+      this.playNotiRegistered = true;
     }
   }
 
-  onMove() {
+  onPlay() {
     let ctx = this.context;
     this.setState({
       stepNumber: ctx.getStepNumber(),
@@ -77,14 +63,14 @@ class GameInfo extends React.Component {
   render() {
     // console.log("GameInfo is rendering...")
     const ctx = this.context;
-    const history = ctx.getSteps();
+    const steps = ctx.getSteps();
     const winner = ctx.getWinner();
 
-    const moves = history.map((move, step) => {
+    const moves = steps.map((move, step) => {
       const desc = 'Go to move #' + move;
       return (
         <li key={step+1}>
-          <button onClick={() => this.jumpTo(step+1)}>{desc}</button>
+          <button onClick={() => this.jumpTo(step+1)} className={this.state.stepNumber === step + 1 ? "win" : null}>{desc}</button>
         </li>
       );
     });
@@ -115,8 +101,8 @@ class Game extends React.Component {
   constructor(props) {
     super(props);
     this.ctx = getSingletonPlayerContext();
-    // if any player wins, force update whole game
-    this.ctx.registerWinnerNoti(()=>this.forceUpdate());
+    // if any player moves, force update whole game
+    this.ctx.registerPlayNoti(()=>this.forceUpdate());
   }
 
   render() {
