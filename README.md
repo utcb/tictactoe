@@ -7,6 +7,13 @@ Tutorial: Intro to React, the Tic Tac Toe game
 [React Context](https://reactjs.org/docs/context.html) <br />
 Context provides a way to pass data through the component tree without having to pass props down manually at every level.
 
+# Redux involved
+## install redux
+* yarn add react-redux
+* yarn add redux
+* yarn add @reduxjs/toolkit
+
+
 # 官方
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
