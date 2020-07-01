@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-
+// reducer定义，多个reducer象slice一样（？TODO: 存疑，进一步澄清）
+// redux的state只能通过reduce方法改变
 export const gameSlice = createSlice({
   name: 'game',
   initialState: {
@@ -17,6 +18,9 @@ export const gameSlice = createSlice({
     winLine: null
   },
   reducers: {
+    // Redux toolkit使用Immer库实现全程操作中，source state的immutable，每一个reducer最终都是生成新的state对象
+    // https://immerjs.github.io/immer/docs/introduction。注：我们目前项目，是用公用的deep copy方法实现其中一部分的类似功能
+
     markOn: (state, action) => { // 玩家成功点击某个格子（index）
       let index = action.payload;
       let player = state.player;
@@ -67,28 +71,14 @@ export const gameSlice = createSlice({
   },
 });
 
-const _getSquares = state=>{
+export const _getSquares = state=>{
   if (state.stepNumber === 0) {
     return Array(9).fill(null);
   }
   return state.history[state.stepNumber - 1];
 };
 
-export const { markOn, jumpTo } = gameSlice.actions;
-
-export const getSquares = state => { // 获取stepNumber步骤的“增强”squares. 全部为null的Array(9)表示第0步的结果，即初始值
-  return _getSquares(state.game);
-};
-
-export const getPlayer = state => state.game.player;
-
-export const getSteps = state => state.game.steps.slice(0, state.game.history.length);
-
-export const getWinner = state => state.game.winner;
-
-export const getStepNumber = state => state.game.stepNumber;
-
-export function calculateWinner(squares) {
+function calculateWinner(squares) {
   const lines = [
     [0, 1, 2],
     [3, 4, 5],
@@ -107,5 +97,8 @@ export function calculateWinner(squares) {
   }
   return null;
 }
+
+// 输出 reducer
+export const { markOn, jumpTo } = gameSlice.actions;
 
 export default gameSlice.reducer;

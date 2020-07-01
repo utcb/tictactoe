@@ -2,21 +2,15 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import {Provider} from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import gameReducer from './gameSlice';
 import {useSelector, useDispatch } from 'react-redux';
-import { markOn, jumpTo, getSquares, getPlayer, getWinner, getSteps, getStepNumber } from './gameSlice'
-
-const gameStore = configureStore({
-  reducer: {
-    game: gameReducer,
-  },
-});
+import { markOn, jumpTo } from './gameSlice';
+import gameStore, {getSquares, getPlayer, getWinner, getSteps, getStepNumber} from './store';
 
 /**
  * Square: 知道自身的位置（props.index: [0-8]）。外部props传入状态(props.value)
  */
 function Square(props) {
+  // useDispatch, useSelector，都是react hook，只能在function类型的组件中使用
   const dispatch = useDispatch();
   const squares = useSelector(getSquares);
   const index = props.index;
