@@ -98,7 +98,8 @@ function calculateWinner(squares) {
   return null;
 }
 
-// 输出 reducer
+// 输出 actions
 export const { markOn, jumpTo } = gameSlice.actions;
 
+// 出书reducer
 export default gameSlice.reducer;
